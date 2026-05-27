@@ -366,7 +366,7 @@ with tab1:
                     return "color: #ffdd44"
                 return "color: #33cc66"
 
-            styled = summary.style.applymap(color_pct, subset=["% Sin stock"])
+            styled = summary.style.map(color_pct, subset=["% Sin stock"])
             st.dataframe(styled, use_container_width=True, height=420)
 
     with col_b:
