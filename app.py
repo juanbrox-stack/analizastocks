@@ -431,22 +431,22 @@ with tab2:
 
     subtab_a, subtab_b = st.tabs(["🔴 Riesgo real de rotura", "🟡 Sin stock pero con entrante"])
 
-    def render_sin_stock_table(df_sub):
+    def render_sin_stock_table(df_sub, btn_key, filename):
         cols = ["REFERENCIA", "NOMBRE COMPLETO", "FAMILIA", "SUBFAMILIA",
                 "PVPR ", "NETO", "Stock Fisico", "Stock Comercial",
                 "Mar", "Puerto", "Despachado", "Total entrante"]
         cols_ok = [c for c in cols if c in df_sub.columns]
         st.dataframe(df_sub[cols_ok].reset_index(drop=True), use_container_width=True, height=420)
         csv = df_sub[cols_ok].to_csv(index=False).encode("utf-8")
-        st.download_button("⬇️ Exportar CSV", csv, "sin_stock.csv", "text/csv")
+        st.download_button("⬇️ Exportar CSV", csv, filename, "text/csv", key=btn_key)
 
     with subtab_a:
         st.markdown('<div class="section-title">SKUs sin stock y sin ningún entrante (riesgo inmediato)</div>', unsafe_allow_html=True)
-        render_sin_stock_table(df_sin_riesgo)
+        render_sin_stock_table(df_sin_riesgo, "dl_riesgo", "sin_stock_riesgo.csv")
 
     with subtab_b:
         st.markdown('<div class="section-title">SKUs sin stock pero con mercancía en tránsito</div>', unsafe_allow_html=True)
-        render_sin_stock_table(df_sin_entrante)
+        render_sin_stock_table(df_sin_entrante, "dl_entrante", "sin_stock_entrante.csv")
 
 
 # ─────────────────────── TAB 3: Tránsito ─────────────────────────────────────
@@ -461,7 +461,7 @@ with tab3:
         cols_ok = [c for c in cols_mar if c in df_mar.columns]
         st.dataframe(df_mar[cols_ok].reset_index(drop=True), use_container_width=True, height=400)
         csv = df_mar[cols_ok].to_csv(index=False).encode("utf-8")
-        st.download_button("⬇️ Exportar Mar CSV", csv, "en_mar.csv", "text/csv")
+        st.download_button("⬇️ Exportar Mar CSV", csv, "en_mar.csv", "text/csv", key="dl_mar")
 
     with col_p:
         st.markdown('<div class="section-title">🏭 Stock en Puerto</div>', unsafe_allow_html=True)
@@ -474,7 +474,7 @@ with tab3:
             cols_ok = [c for c in cols_p if c in df_puerto.columns]
             st.dataframe(df_puerto[cols_ok].reset_index(drop=True), use_container_width=True, height=400)
             csv = df_puerto[cols_ok].to_csv(index=False).encode("utf-8")
-            st.download_button("⬇️ Exportar Puerto CSV", csv, "en_puerto.csv", "text/csv")
+            st.download_button("⬇️ Exportar Puerto CSV", csv, "en_puerto.csv", "text/csv", key="dl_puerto")
 
     # Combined table: sin stock but incoming
     st.markdown("---")
