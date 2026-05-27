@@ -104,35 +104,50 @@ def get_tarifa_df(xls):
     return df
 
 
-def get_stock_es(xls):
-    df = pd.read_excel(xls, sheet_name="España")
+# Mapping: country -> sheet name and stock column names
+COUNTRY_CONFIG = {
+    "España":    {"sheet": "España",   "disponible": "Stock Disponible", "real": "Stock Fisico",  "extra": ["Stock Operativo", "Mar", "Puerto", "Despachado"], "has_transit": True},
+    "Alemania":  {"sheet": "Alemania", "disponible": "StockDisponible", "real": "StockReal",     "extra": [], "has_transit": False},
+    "Francia":   {"sheet": "Francia",  "disponible": "StockDisponible", "real": "StockReal",     "extra": [], "has_transit": False},
+    "Italia":    {"sheet": "Italia",   "disponible": "StockDisponible", "real": "StockReal",     "extra": [], "has_transit": False},
+}
+
+def get_stock_for_country(xls, country: str):
+    cfg = COUNTRY_CONFIG[country]
+    df = pd.read_excel(xls, sheet_name=cfg["sheet"])
     df.columns = df.columns.str.strip()
     df["Referencia"] = df["Referencia"].astype(str).str.strip()
+    # Normalise to unified column names
+    df = df.rename(columns={
+        cfg["disponible"]: "Stock Disponible",
+        cfg["real"]: "Stock Fisico",
+    })
+    # Ensure transit columns exist
+    for col in ["Mar", "Puerto", "Despachado", "Stock Operativo"]:
+        if col not in df.columns:
+            df[col] = 0
+    df["Stock Disponible"] = pd.to_numeric(df["Stock Disponible"], errors="coerce").fillna(0)
+    df["Stock Fisico"] = pd.to_numeric(df["Stock Fisico"], errors="coerce").fillna(0)
     return df
 
 
 def merge_tarifa_stock(df_tarifa, df_stock):
-    df = df_tarifa.merge(
-        df_stock[["Referencia", "Familia Padre", "Familia", "Subfamilia",
-                  "Stock Fisico", "Stock Operativo", "Stock Comercial", "Mar", "Puerto", "Despachado"]],
-        left_on="REFERENCIA",
-        right_on="Referencia",
-        how="left",
-    )
-    df["Stock Comercial"] = df["Stock Comercial"].fillna(0)
-    df["Stock Fisico"] = df["Stock Fisico"].fillna(0)
-    df["Mar"] = df["Mar"].fillna(0)
-    df["Puerto"] = df["Puerto"].fillna(0)
-    df["Despachado"] = df["Despachado"].fillna(0)
-    df["Sin stock"] = df["Stock Comercial"] == 0
+    # Pick only columns that exist in this country's stock sheet
+    stock_cols = ["Referencia", "Stock Disponible", "Stock Fisico",
+                  "Mar", "Puerto", "Despachado", "Stock Operativo",
+                  "Familia Padre", "Familia", "Subfamilia"]
+    stock_cols = [c for c in stock_cols if c in df_stock.columns]
+    df = df_tarifa.merge(df_stock[stock_cols], left_on="REFERENCIA", right_on="Referencia", how="left")
+    for col in ["Stock Disponible", "Stock Fisico", "Stock Operativo", "Mar", "Puerto", "Despachado"]:
+        if col not in df.columns:
+            df[col] = 0
+        df[col] = pd.to_numeric(df[col], errors="coerce").fillna(0)
+    df["Sin stock"] = df["Stock Disponible"] == 0
     df["En mar"] = df["Mar"] > 0
     df["En puerto"] = df["Puerto"] > 0
-    # Stock total incoming
     df["Total entrante"] = df["Mar"] + df["Puerto"] + df["Despachado"]
-    # Risk: sin stock AND sin entrante
     df["Riesgo rotura"] = (df["Sin stock"]) & (df["Total entrante"] == 0)
-    # Warn: stock bajo (<=3) sin importar entrante
-    df["Stock bajo"] = (df["Stock Comercial"] > 0) & (df["Stock Comercial"] <= 3)
+    df["Stock bajo"] = (df["Stock Disponible"] > 0) & (df["Stock Disponible"] <= 3)
     return df
 
 
@@ -198,6 +213,14 @@ with st.sidebar:
                 st.success("✅ Datos cargados")
 
     st.markdown("---")
+    st.markdown("#### 🌍 País")
+    selected_country = st.selectbox(
+        "País",
+        ["España", "Alemania", "Francia", "Italia"],
+        label_visibility="collapsed",
+    )
+
+    st.markdown("---")
     st.markdown("#### 🔍 Filtros")
 
     # Filters are rendered below after data loads (options depend on data)
@@ -238,21 +261,29 @@ if not data_ready:
 
 # ── Load & merge data ─────────────────────────────────────────────────────────
 @st.cache_data(show_spinner=False)
-def build_merged(_tarifa_xls=None, _stock_xls=None,
+def build_merged(country, _tarifa_xls=None, _stock_xls=None,
                  _tarifa_df_remote=None, _stock_sheets_remote=None):
     if _tarifa_xls is not None:
         df_t = get_tarifa_df(_tarifa_xls)
-        df_s = get_stock_es(_stock_xls)
+        df_s = get_stock_for_country(_stock_xls, country)
     else:
         df_t = _tarifa_df_remote.copy()
-        df_s = _stock_sheets_remote["España"].copy()
+        cfg = COUNTRY_CONFIG[country]
+        df_s = _stock_sheets_remote[cfg["sheet"]].copy()
         df_s.columns = df_s.columns.str.strip()
         df_s["Referencia"] = df_s["Referencia"].astype(str).str.strip()
+        df_s = df_s.rename(columns={cfg["disponible"]: "Stock Disponible", cfg["real"]: "Stock Fisico"})
+        for col in ["Mar", "Puerto", "Despachado", "Stock Operativo"]:
+            if col not in df_s.columns:
+                df_s[col] = 0
+        df_s["Stock Disponible"] = pd.to_numeric(df_s["Stock Disponible"], errors="coerce").fillna(0)
+        df_s["Stock Fisico"] = pd.to_numeric(df_s["Stock Fisico"], errors="coerce").fillna(0)
     return merge_tarifa_stock(df_t, df_s)
 
 
 with st.spinner("Procesando datos..."):
     df_full = build_merged(
+        selected_country,
         _tarifa_xls=tarifa_xls,
         _stock_xls=stock_xls,
         _tarifa_df_remote=tarifa_dfs_remote,
@@ -405,7 +436,7 @@ with tab1:
     # Full table preview
     st.markdown('<div class="section-title">Detalle completo</div>', unsafe_allow_html=True)
     cols_show = ["REFERENCIA", "NOMBRE COMPLETO", "FAMILIA", "SUBFAMILIA",
-                 "Stock Comercial", "Stock Fisico", "Mar", "Puerto", "Despachado", "Estado"]
+                 "Stock Disponible", "Stock Fisico", "Mar", "Puerto", "Despachado", "Estado"]
     cols_available = [c for c in cols_show if c in df.columns]
     st.dataframe(df[cols_available].head(500), use_container_width=True, height=300)
     if len(df) > 500:
@@ -430,7 +461,7 @@ with tab2:
 
     def render_sin_stock_table(df_sub, btn_key, filename):
         cols = ["REFERENCIA", "NOMBRE COMPLETO", "FAMILIA", "SUBFAMILIA",
-                "PVPR ", "NETO", "Stock Fisico", "Stock Comercial",
+                "PVPR ", "NETO", "Stock Fisico", "Stock Disponible",
                 "Mar", "Puerto", "Despachado", "Total entrante"]
         cols_ok = [c for c in cols if c in df_sub.columns]
         st.dataframe(df_sub[cols_ok].reset_index(drop=True), use_container_width=True, height=420)
@@ -454,7 +485,7 @@ with tab3:
         st.markdown('<div class="section-title">🚢 Stock en Mar</div>', unsafe_allow_html=True)
         df_mar = df[df["Mar"] > 0].copy()
         st.markdown(f"**{len(df_mar):,} SKUs** con stock en tránsito marítimo")
-        cols_mar = ["REFERENCIA", "NOMBRE COMPLETO", "FAMILIA", "Stock Comercial", "Mar", "Puerto", "Despachado", "Sin stock"]
+        cols_mar = ["REFERENCIA", "NOMBRE COMPLETO", "FAMILIA", "Stock Disponible", "Mar", "Puerto", "Despachado", "Sin stock"]
         cols_ok = [c for c in cols_mar if c in df_mar.columns]
         st.dataframe(df_mar[cols_ok].reset_index(drop=True), use_container_width=True, height=400)
         csv = df_mar[cols_ok].to_csv(index=False).encode("utf-8")
@@ -467,7 +498,7 @@ with tab3:
             st.info("No hay stock en puerto actualmente.")
         else:
             st.markdown(f"**{len(df_puerto):,} SKUs** en puerto")
-            cols_p = ["REFERENCIA", "NOMBRE COMPLETO", "FAMILIA", "Stock Comercial", "Puerto", "Despachado", "Sin stock"]
+            cols_p = ["REFERENCIA", "NOMBRE COMPLETO", "FAMILIA", "Stock Disponible", "Puerto", "Despachado", "Sin stock"]
             cols_ok = [c for c in cols_p if c in df_puerto.columns]
             st.dataframe(df_puerto[cols_ok].reset_index(drop=True), use_container_width=True, height=400)
             csv = df_puerto[cols_ok].to_csv(index=False).encode("utf-8")
@@ -477,7 +508,7 @@ with tab3:
     st.markdown("---")
     st.markdown('<div class="section-title">📋 Sin stock almacén pero con entrante (mar + puerto + despachado)</div>', unsafe_allow_html=True)
     df_combo = df[(df["Sin stock"]) & (df["Total entrante"] > 0)].copy()
-    cols_c = ["REFERENCIA", "NOMBRE COMPLETO", "FAMILIA", "Stock Comercial", "Mar", "Puerto", "Despachado", "Total entrante"]
+    cols_c = ["REFERENCIA", "NOMBRE COMPLETO", "FAMILIA", "Stock Disponible", "Mar", "Puerto", "Despachado", "Total entrante"]
     cols_ok = [c for c in cols_c if c in df_combo.columns]
     st.dataframe(df_combo[cols_ok].reset_index(drop=True), use_container_width=True, height=300)
 
@@ -589,7 +620,7 @@ with tab5:
         df_search = df[mask].copy()
         st.markdown(f"**{len(df_search)} resultados**")
         cols_s = ["REFERENCIA", "EAN", "NOMBRE COMPLETO", "FAMILIA", "SUBFAMILIA",
-                  "PVPR ", "NETO", "Stock Fisico", "Stock Comercial",
+                  "PVPR ", "NETO", "Stock Fisico", "Stock Disponible",
                   "Mar", "Puerto", "Despachado", "Total entrante", "Estado"]
         cols_ok = [c for c in cols_s if c in df_search.columns]
         st.dataframe(df_search[cols_ok].reset_index(drop=True), use_container_width=True, height=420)
