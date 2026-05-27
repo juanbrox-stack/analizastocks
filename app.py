@@ -47,13 +47,7 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # ── Helpers ──────────────────────────────────────────────────────────────────
-CHANNEL_SHEETS = {
-    "Amazon (AMZ)": "T_AMZ",
-    "Miravia (MIR)": "T_MIR",
-    "C4 / Corte Inglés": "T_C4",
-    "MediaMarkt (MM)": "T_MM",
-    "Privalia (PRIV)": "T_PRIV",
-}
+TARIFA_DEFAULT_SHEET = "T_AMZ"
 
 @st.cache_data(show_spinner=False)
 def load_tarifa_from_url(url: str):
@@ -62,17 +56,14 @@ def load_tarifa_from_url(url: str):
         r = requests.get(url, timeout=30)
         r.raise_for_status()
         xls = pd.ExcelFile(io.BytesIO(r.content))
-        dfs = {}
-        for label, sheet in CHANNEL_SHEETS.items():
-            if sheet in xls.sheet_names:
-                df = pd.read_excel(xls, sheet_name=sheet)
-                df.columns = df.columns.str.strip()
-                ref_col = "sku" if "sku" in df.columns else "REFERENCIA"
-                df = df.rename(columns={ref_col: "REFERENCIA"})
-                df["REFERENCIA"] = df["REFERENCIA"].astype(str).str.strip()
-                df["__CANAL__"] = label
-                dfs[label] = df
-        return dfs, None
+        # Use first T_ sheet available
+        sheet = next((s for s in xls.sheet_names if s.startswith("T_")), xls.sheet_names[0])
+        df = pd.read_excel(xls, sheet_name=sheet)
+        df.columns = df.columns.str.strip()
+        ref_col = "sku" if "sku" in df.columns else "REFERENCIA"
+        df = df.rename(columns={ref_col: "REFERENCIA"})
+        df["REFERENCIA"] = df["REFERENCIA"].astype(str).str.strip()
+        return df, None
     except Exception as e:
         return None, str(e)
 
@@ -102,8 +93,10 @@ def load_uploaded(file_obj):
     return xls
 
 
-def get_tarifa_df(xls, channel_sheet):
-    df = pd.read_excel(xls, sheet_name=channel_sheet)
+def get_tarifa_df(xls):
+    # Use first T_ sheet available (T_AMZ default)
+    sheet = next((s for s in xls.sheet_names if s.startswith("T_")), xls.sheet_names[0])
+    df = pd.read_excel(xls, sheet_name=sheet)
     df.columns = df.columns.str.strip()
     ref_col = "sku" if "sku" in df.columns else "REFERENCIA"
     df = df.rename(columns={ref_col: "REFERENCIA"})
@@ -207,14 +200,8 @@ with st.sidebar:
     st.markdown("---")
     st.markdown("#### 🔍 Filtros")
 
-    selected_channel = st.selectbox(
-        "Canal",
-        list(CHANNEL_SHEETS.keys()),
-        index=0,
-    )
-
-    familia_filter = st.multiselect("Familia", [], placeholder="Todas")
-    subfamilia_filter = st.multiselect("Subfamilia", [], placeholder="Todas")
+    # Filters are rendered below after data loads (options depend on data)
+    filter_placeholder = st.container()
 
     show_only = st.multiselect(
         "Mostrar sólo",
@@ -234,7 +221,7 @@ with col_h1:
     st.markdown("## 📦 Dashboard de Stock vs Tarifa")
     st.markdown("Visibilidad en tiempo real · Anticipación a roturas de stock")
 with col_h2:
-    st.markdown(f"<div style='text-align:right;color:#556677;font-size:13px;margin-top:10px'>Canal activo<br><b style='color:#3399ff;font-size:18px'>{selected_channel}</b></div>", unsafe_allow_html=True)
+    pass
 st.markdown("</div>", unsafe_allow_html=True)
 
 if not data_ready:
@@ -244,21 +231,20 @@ if not data_ready:
     - 🔴 SKUs **sin stock** y sin reposición prevista  
     - 🟡 SKUs **sin stock** pero con mercancía **en mar o puerto**  
     - 🟠 SKUs con **stock bajo** (≤ 3 unidades)  
-    - 📊 Análisis por **canal, familia y subfamilia**
+    - 📊 Análisis por **familia y subfamilia**
     - 🚢 Stock **en tránsito** (mar, puerto, despachado)
     """)
     st.stop()
 
 # ── Load & merge data ─────────────────────────────────────────────────────────
 @st.cache_data(show_spinner=False)
-def build_merged(channel_label, _tarifa_xls=None, _stock_xls=None,
-                 _tarifa_dfs_remote=None, _stock_sheets_remote=None):
-    sheet = CHANNEL_SHEETS[channel_label]
+def build_merged(_tarifa_xls=None, _stock_xls=None,
+                 _tarifa_df_remote=None, _stock_sheets_remote=None):
     if _tarifa_xls is not None:
-        df_t = get_tarifa_df(_tarifa_xls, sheet)
+        df_t = get_tarifa_df(_tarifa_xls)
         df_s = get_stock_es(_stock_xls)
     else:
-        df_t = _tarifa_dfs_remote[channel_label].copy()
+        df_t = _tarifa_df_remote.copy()
         df_s = _stock_sheets_remote["España"].copy()
         df_s.columns = df_s.columns.str.strip()
         df_s["Referencia"] = df_s["Referencia"].astype(str).str.strip()
@@ -267,16 +253,27 @@ def build_merged(channel_label, _tarifa_xls=None, _stock_xls=None,
 
 with st.spinner("Procesando datos..."):
     df_full = build_merged(
-        selected_channel,
         _tarifa_xls=tarifa_xls,
         _stock_xls=stock_xls,
-        _tarifa_dfs_remote=tarifa_dfs_remote,
+        _tarifa_df_remote=tarifa_dfs_remote,
         _stock_sheets_remote=stock_sheets_remote,
     )
 
-# Update sidebar filters dynamically
+# ── Dynamic sidebar filters (need data to populate options) ──────────────────
 familias = sorted(df_full["FAMILIA"].dropna().unique().tolist()) if "FAMILIA" in df_full.columns else []
-subfamilias = sorted(df_full["SUBFAMILIA"].dropna().unique().tolist()) if "SUBFAMILIA" in df_full.columns else []
+
+with filter_placeholder:
+    familia_filter = st.multiselect("Familia", familias, placeholder="Todas")
+
+# Cascade: subfamilia options depend on selected familias
+if familia_filter:
+    sub_df = df_full[df_full["FAMILIA"].isin(familia_filter)]
+else:
+    sub_df = df_full
+subfamilias = sorted(sub_df["SUBFAMILIA"].dropna().unique().tolist()) if "SUBFAMILIA" in sub_df.columns else []
+
+with filter_placeholder:
+    subfamilia_filter = st.multiselect("Subfamilia", subfamilias, placeholder="Todas")
 
 # Apply filters
 df = df_full.copy()
@@ -601,4 +598,4 @@ with tab5:
 
 # ── Footer ───────────────────────────────────────────────────────────────────
 st.markdown("---")
-st.caption(f"Dashboard generado · {datetime.now().strftime('%d/%m/%Y %H:%M')} · Canal: **{selected_channel}** · SKUs analizados: **{total:,}**")
+st.caption(f"Dashboard generado · {datetime.now().strftime('%d/%m/%Y %H:%M')} · SKUs analizados: **{total:,}**")
