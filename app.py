@@ -78,9 +78,9 @@ def load_stock_from_url(url: str):
         sheets = {}
         for sh in xls.sheet_names:
             df = pd.read_excel(xls, sheet_name=sh)
-            df.columns = df.columns.str.strip()
+            df.columns = df.columns = df.columns.str.strip().str.strip("'\"")
             if "Referencia" in df.columns:
-                df["Referencia"] = df["Referencia"].astype(str).str.strip()
+                df["Referencia"] = df["Referencia"].astype(str).str.strip().str.strip("'\"")
             sheets[sh] = df
         return sheets, None
     except Exception as e:
@@ -97,7 +97,7 @@ def get_tarifa_df(xls):
     # Use first T_ sheet available (T_AMZ default)
     sheet = next((s for s in xls.sheet_names if s.startswith("T_")), xls.sheet_names[0])
     df = pd.read_excel(xls, sheet_name=sheet)
-    df.columns = df.columns.str.strip()
+    df.columns = df.columns = df.columns.str.strip().str.strip("'\"")
     ref_col = "sku" if "sku" in df.columns else "REFERENCIA"
     df = df.rename(columns={ref_col: "REFERENCIA"})
     df["REFERENCIA"] = df["REFERENCIA"].astype(str).str.strip()
@@ -115,8 +115,8 @@ COUNTRY_CONFIG = {
 def get_stock_for_country(xls, country: str):
     cfg = COUNTRY_CONFIG[country]
     df = pd.read_excel(xls, sheet_name=cfg["sheet"])
-    df.columns = df.columns.str.strip()
-    df["Referencia"] = df["Referencia"].astype(str).str.strip()
+    df.columns = df.columns = df.columns.str.strip().str.strip("'\"")
+    df["Referencia"] = df["Referencia"].astype(str).str.strip().str.strip("'\"")
     # Normalise to unified column names
     df = df.rename(columns={
         cfg["disponible"]: "Stock Disponible",
@@ -270,8 +270,8 @@ def build_merged(country, _tarifa_xls=None, _stock_xls=None,
         df_t = _tarifa_df_remote.copy()
         cfg = COUNTRY_CONFIG[country]
         df_s = _stock_sheets_remote[cfg["sheet"]].copy()
-        df_s.columns = df_s.columns.str.strip()
-        df_s["Referencia"] = df_s["Referencia"].astype(str).str.strip()
+        df_s.columns = df_s.columns.str.strip().str.strip("'\"")
+        df_s["Referencia"] = df_s["Referencia"].astype(str).str.strip().str.strip("'\"")
         df_s = df_s.rename(columns={cfg["disponible"]: "Stock Disponible", cfg["real"]: "Stock Fisico"})
         for col in ["Mar", "Puerto", "Despachado", "Stock Operativo"]:
             if col not in df_s.columns:
