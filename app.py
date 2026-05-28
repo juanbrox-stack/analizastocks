@@ -106,30 +106,35 @@ def get_tarifa_df(xls):
 
 # Mapping: country -> sheet name and stock column names
 COUNTRY_CONFIG = {
-    "España":    {"sheet": "España",   "disponible": "Stock Disponible", "real": "Stock Fisico",  "extra": ["Stock Operativo", "Mar", "Puerto", "Despachado"], "has_transit": True},
-    "Alemania":  {"sheet": "Alemania", "disponible": "StockDisponible", "real": "StockReal",     "extra": [], "has_transit": False},
-    "Francia":   {"sheet": "Francia",  "disponible": "StockDisponible", "real": "StockReal",     "extra": [], "has_transit": False},
-    "Italia":    {"sheet": "Italia",   "disponible": "StockDisponible", "real": "StockReal",     "extra": [], "has_transit": False},
+    "España":   {"sheet": "España",   "disponible": "Stock Operativo", "real": "Stock Fisico", "disp_idx": 6, "real_idx": 5},
+    "Alemania": {"sheet": "Alemania", "disponible": "StockDisponible", "real": "StockReal",    "disp_idx": 5, "real_idx": 4},
+    "Francia":  {"sheet": "Francia",  "disponible": "StockDisponible", "real": "StockReal",    "disp_idx": 5, "real_idx": 4},
+    "Italia":   {"sheet": "Italia",   "disponible": "StockDisponible", "real": "StockReal",    "disp_idx": 5, "real_idx": 4},
 }
 
 def get_stock_for_country(xls, country: str):
     cfg = COUNTRY_CONFIG[country]
     df = pd.read_excel(xls, sheet_name=cfg["sheet"])
-    df.columns = df.columns = df.columns.str.strip().str.strip("'\"")
-    df["Referencia"] = df["Referencia"].astype(str).str.strip().str.strip("'\"")
-    # Normalise to unified column names
-    df = df.rename(columns={
-        cfg["disponible"]: "Stock Disponible",
-        cfg["real"]: "Stock Fisico",
-    })
-    # Ensure transit columns exist
+    QUOTES = chr(39) + chr(34)
+    df.columns = [str(c).strip().strip(QUOTES) for c in df.columns]
+    df["Referencia"] = df["Referencia"].astype(str).str.strip().str.strip(QUOTES)
+
+    disp_col = cfg["disponible"]
+    real_col = cfg["real"]
+    if disp_col not in df.columns:
+        disp_col = df.columns[cfg["disp_idx"]]
+    if real_col not in df.columns:
+        real_col = df.columns[cfg["real_idx"]]
+
+    df["Stock Disponible"] = pd.to_numeric(df[disp_col], errors="coerce").fillna(0)
+    df["Stock Fisico"]     = pd.to_numeric(df[real_col], errors="coerce").fillna(0)
+
     for col in ["Mar", "Puerto", "Despachado", "Stock Operativo"]:
         if col not in df.columns:
             df[col] = 0
-    df["Stock Disponible"] = pd.to_numeric(df["Stock Disponible"], errors="coerce").fillna(0)
-    df["Stock Fisico"] = pd.to_numeric(df["Stock Fisico"], errors="coerce").fillna(0)
+        else:
+            df[col] = pd.to_numeric(df[col], errors="coerce").fillna(0)
     return df
-
 
 def merge_tarifa_stock(df_tarifa, df_stock):
     # Pick only columns that exist in this country's stock sheet
