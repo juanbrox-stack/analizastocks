@@ -304,20 +304,19 @@ with st.sidebar:
     st.caption(f"🕒 {datetime.now().strftime('%d/%m/%Y %H:%M')}")
 
 # ── Main ─────────────────────────────────────────────────────────────────────
-st.markdown('<div class="main-header">', unsafe_allow_html=True)
-col_h1, col_h2 = st.columns([3, 1])
-with col_h1:
-    st.markdown("## 📦 Dashboard de Stock vs Tarifa")
-    st.markdown("Visibilidad en tiempo real · Anticipación a roturas de stock")
-with col_h2:
-    st.markdown(
-        "<div style='text-align:right;padding-top:8px'>"
-        "<span style='font-size:11px;color:#7ABFCC;text-transform:uppercase;letter-spacing:1px'>Powered by</span><br>"
-        "<span style='font-size:20px;font-weight:700;color:#3EB1C8;letter-spacing:1px'>CECOTEC</span>"
-        "</div>",
-        unsafe_allow_html=True,
-    )
-st.markdown("</div>", unsafe_allow_html=True)
+st.markdown(
+    """<div class="main-header" style="display:flex;justify-content:space-between;align-items:center;">
+        <div>
+            <div style="font-size:28px;font-weight:700;margin-bottom:4px;">📦 Dashboard de Stock vs Tarifa</div>
+            <div style="font-size:14px;color:#7ABFCC;">Visibilidad en tiempo real · Anticipación a roturas de stock</div>
+        </div>
+        <div style="text-align:right;">
+            <div style="font-size:11px;color:#7ABFCC;text-transform:uppercase;letter-spacing:1.5px;">Powered by</div>
+            <div style="font-size:22px;font-weight:700;color:#3EB1C8;letter-spacing:2px;">CECOTEC</div>
+        </div>
+    </div>""",
+    unsafe_allow_html=True,
+)
 
 if not data_ready:
     st.info("👈 Carga los datos desde la barra lateral para comenzar (archivos o URLs).")
