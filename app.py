@@ -404,16 +404,14 @@ if familia_filter:
 if subfamilia_filter:
     df = df[df["SUBFAMILIA"].isin(subfamilia_filter)]
 
-if "Sin stock" in show_only:
-    df = df[df["Sin stock"]]
-if "Stock bajo" in show_only:
-    df = df[df["Stock bajo"]]
-if "En mar" in show_only:
-    df = df[df["En mar"]]
-if "En puerto" in show_only:
-    df = df[df["En puerto"]]
-if "Riesgo rotura" in show_only:
-    df = df[df["Riesgo rotura"]]
+if show_only:
+    mask = pd.Series(False, index=df.index)
+    if "Sin stock"     in show_only: mask |= df["Sin stock"]
+    if "Stock bajo"    in show_only: mask |= df["Stock bajo"]
+    if "En mar"        in show_only: mask |= df["En mar"]
+    if "En puerto"     in show_only: mask |= df["En puerto"]
+    if "Riesgo rotura" in show_only: mask |= df["Riesgo rotura"]
+    df = df[mask]
 
 df["Estado"] = df.apply(status_label, axis=1)
 
