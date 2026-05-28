@@ -99,6 +99,22 @@ st.markdown("""
     }
     .stDownloadButton > button:hover { background-color: #5CC4D8 !important; }
 
+    /* Text inputs - high contrast text */
+    .stTextInput > div > div > input {
+        color: #FAF9F5 !important;
+        background-color: #1A2B2E !important;
+        border-color: #3EB1C8 !important;
+        font-size: 15px !important;
+    }
+    .stTextInput > div > div > input::placeholder {
+        color: #5A8A95 !important;
+        opacity: 1 !important;
+    }
+    .stTextInput > div > div > input:focus {
+        border-color: #3EB1C8 !important;
+        box-shadow: 0 0 0 2px rgba(62,177,200,0.25) !important;
+    }
+
     /* Scrollbar */
     ::-webkit-scrollbar { width: 6px; height: 6px; }
     ::-webkit-scrollbar-track { background: #141413; }
