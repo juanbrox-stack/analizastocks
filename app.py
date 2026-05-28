@@ -235,13 +235,13 @@ def merge_tarifa_stock(df_tarifa, df_stock):
 
 def status_label(row):
     if row["Sin stock"] and row["Riesgo rotura"]:
-        return "🔴 Sin stock"
+        return "Sin stock"
     elif row["Sin stock"] and row["Total entrante"] > 0:
-        return "🟡 Sin stock (entrante)"
+        return "Sin stock (entrante)"
     elif row["Stock bajo"]:
-        return "🟠 Stock bajo"
+        return "Stock bajo"
     else:
-        return "🟢 OK"
+        return "OK"
 
 
 # ── Sidebar ──────────────────────────────────────────────────────────────────
@@ -495,10 +495,10 @@ with tab1:
         try:
             import plotly.express as px
             color_map = {
-                "🔴 Sin stock": "#E85555",
-                "🟡 Sin stock (entrante)": "#E8943A",
-                "🟠 Stock bajo": "#E8C43A",
-                "🟢 OK": "#2ECC71",
+                "Sin stock":           "#E85555",
+                "Sin stock (entrante)":"#E8943A",
+                "Stock bajo":          "#E8C43A",
+                "OK":                  "#2ECC71",
             }
             fig = px.pie(
                 estado_df,
@@ -508,13 +508,18 @@ with tab1:
                 color_discrete_map=color_map,
                 hole=0.45,
             )
+            fig.update_traces(
+                textposition="inside",
+                textinfo="percent+label",
+                textfont=dict(color="#141413", size=13),
+                insidetextorientation="radial",
+            )
             fig.update_layout(
                 paper_bgcolor="rgba(0,0,0,0)",
                 plot_bgcolor="rgba(0,0,0,0)",
                 font_color="#B8D8DE",
                 margin=dict(t=20, b=20, l=10, r=10),
-                legend=dict(orientation="v", font_size=12),
-                showlegend=True,
+                showlegend=False,
             )
             st.plotly_chart(fig, use_container_width=True)
         except ImportError:
