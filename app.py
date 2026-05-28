@@ -16,33 +16,86 @@ st.set_page_config(
 # ── CSS ──────────────────────────────────────────────────────────────────────
 st.markdown("""
 <style>
-    .stApp { background-color: #0f1117; color: #e0e0e0; }
+    /* ── Cecotec Brand Palette ───────────────────────────────────────────────
+       Primary turquoise : #3EB1C8
+       Corporate black   : #141413
+       Off-white         : #FAF9F5
+    ─────────────────────────────────────────────────────────────────────── */
+    .stApp { background-color: #141413; color: #E8F4F7; }
+
+    /* Sidebar */
+    section[data-testid="stSidebar"] {
+        background-color: #1A2B2E !important;
+        border-right: 1px solid #2D5059;
+    }
+    section[data-testid="stSidebar"] * { color: #B8D8DE !important; }
+    section[data-testid="stSidebar"] h1,
+    section[data-testid="stSidebar"] h2,
+    section[data-testid="stSidebar"] h3 { color: #3EB1C8 !important; }
+
     .main-header {
-        background: linear-gradient(135deg, #1a1f35 0%, #0d1b2a 100%);
-        border: 1px solid #2a3550;
+        background: linear-gradient(135deg, #1A2B2E 0%, #141413 100%);
+        border: 1px solid #3EB1C8;
         border-radius: 12px;
         padding: 20px 30px;
         margin-bottom: 24px;
     }
     .metric-card {
-        background: #1a1f35;
-        border: 1px solid #2a3550;
+        background: #1A2B2E;
+        border: 1px solid #2D5059;
         border-radius: 10px;
         padding: 16px 20px;
         text-align: center;
+        transition: border-color .2s;
     }
-    .metric-card .label { font-size: 12px; color: #8899aa; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 6px; }
+    .metric-card:hover { border-color: #3EB1C8; }
+    .metric-card .label { font-size: 11px; color: #7ABFCC; text-transform: uppercase; letter-spacing: 1.2px; margin-bottom: 6px; }
     .metric-card .value { font-size: 28px; font-weight: 700; }
-    .badge-danger { background: #3d1515; color: #ff5555; padding: 2px 10px; border-radius: 20px; font-size: 12px; font-weight: 600; }
-    .badge-warning { background: #3d2d0a; color: #ffaa33; padding: 2px 10px; border-radius: 20px; font-size: 12px; font-weight: 600; }
-    .badge-success { background: #0d2d1a; color: #33cc66; padding: 2px 10px; border-radius: 20px; font-size: 12px; font-weight: 600; }
-    .badge-info { background: #0d1f3d; color: #3399ff; padding: 2px 10px; border-radius: 20px; font-size: 12px; font-weight: 600; }
-    .section-title { font-size: 16px; font-weight: 600; color: #c0d0e8; margin-bottom: 12px; padding-bottom: 6px; border-bottom: 1px solid #2a3550; }
-    div[data-testid="stDataFrame"] { border-radius: 8px; border: 1px solid #2a3550; }
-    .stTabs [data-baseweb="tab"] { color: #8899aa; }
-    .stTabs [aria-selected="true"] { color: #3399ff; border-bottom-color: #3399ff !important; }
-    .stSelectbox > div > div { background-color: #1a1f35 !important; border-color: #2a3550 !important; }
-    .url-box { background: #151b2e; border: 1px dashed #3a4a6a; border-radius: 8px; padding: 16px; margin-bottom: 16px; }
+
+    .badge-danger  { background: #3D1515; color: #E85555; padding: 2px 10px; border-radius: 20px; font-size: 12px; font-weight: 600; }
+    .badge-warning { background: #3D2800; color: #E8943A; padding: 2px 10px; border-radius: 20px; font-size: 12px; font-weight: 600; }
+    .badge-success { background: #0D3020; color: #2ECC71; padding: 2px 10px; border-radius: 20px; font-size: 12px; font-weight: 600; }
+    .badge-info    { background: #0D2D35; color: #3EB1C8; padding: 2px 10px; border-radius: 20px; font-size: 12px; font-weight: 600; }
+
+    .section-title {
+        font-size: 15px; font-weight: 600; color: #3EB1C8;
+        margin-bottom: 12px; padding-bottom: 6px;
+        border-bottom: 2px solid #2D5059;
+    }
+
+    /* Tabs */
+    .stTabs [data-baseweb="tab-list"] { border-bottom: 1px solid #2D5059; gap: 4px; }
+    .stTabs [data-baseweb="tab"] { color: #7ABFCC; background: transparent; border-radius: 6px 6px 0 0; }
+    .stTabs [data-baseweb="tab"]:hover { color: #3EB1C8; background: #1A2B2E; }
+    .stTabs [aria-selected="true"] { color: #3EB1C8 !important; border-bottom: 2px solid #3EB1C8 !important; background: #1A2B2E; }
+
+    /* DataFrames */
+    div[data-testid="stDataFrame"] { border-radius: 8px; border: 1px solid #2D5059; }
+
+    /* Inputs & selects */
+    .stSelectbox > div > div,
+    .stMultiSelect > div > div,
+    .stTextInput > div > div { background-color: #1A2B2E !important; border-color: #2D5059 !important; }
+    .stMultiSelect [data-baseweb="tag"] { background-color: #3EB1C8 !important; color: #141413 !important; }
+
+    /* URL box */
+    .url-box { background: #1A2B2E; border: 1px dashed #3EB1C8; border-radius: 8px; padding: 16px; margin-bottom: 16px; }
+
+    /* Buttons */
+    .stDownloadButton > button {
+        background-color: #3EB1C8 !important;
+        color: #141413 !important;
+        font-weight: 600 !important;
+        border: none !important;
+        border-radius: 6px !important;
+    }
+    .stDownloadButton > button:hover { background-color: #5CC4D8 !important; }
+
+    /* Scrollbar */
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: #141413; }
+    ::-webkit-scrollbar-thumb { background: #2D5059; border-radius: 3px; }
+    ::-webkit-scrollbar-thumb:hover { background: #3EB1C8; }
 </style>
 """, unsafe_allow_html=True)
 
@@ -346,12 +399,12 @@ ok_pct = round((total - sin_stock - bajo) / total * 100, 1) if total > 0 else 0
 
 c1, c2, c3, c4, c5, c6 = st.columns(6)
 cards = [
-    (c1, "Total SKUs", total, "#3399ff"),
-    (c2, "🔴 Sin stock", sin_stock, "#ff5555"),
-    (c3, "⚠️ Riesgo rotura", riesgo, "#ff3333"),
-    (c4, "🟠 Stock bajo", bajo, "#ffaa33"),
-    (c5, "🚢 En mar", en_mar, "#33aaff"),
-    (c6, "🏭 En puerto", en_puerto, "#aa88ff"),
+    (c1, "Total SKUs",      total,      "#3EB1C8"),
+    (c2, "Sin stock",       sin_stock,  "#E85555"),
+    (c3, "Riesgo rotura",   riesgo,     "#E85555"),
+    (c4, "Stock bajo",      bajo,       "#E8943A"),
+    (c5, "En mar",          en_mar,     "#3EB1C8"),
+    (c6, "En puerto",       en_puerto,  "#7ABFCC"),
 ]
 for col, label, value, color in cards:
     with col:
@@ -392,12 +445,12 @@ with tab1:
 
             def color_pct(val):
                 if val >= 60:
-                    return "color: #ff5555; font-weight:600"
+                    return "color: #E85555; font-weight:600"
                 elif val >= 30:
-                    return "color: #ffaa33; font-weight:600"
+                    return "color: #E8943A; font-weight:600"
                 elif val >= 10:
-                    return "color: #ffdd44"
-                return "color: #33cc66"
+                    return "color: #E8C43A"
+                return "color: #2ECC71"
 
             styled = summary.style.map(color_pct, subset=["% Sin stock"])
             st.dataframe(styled, use_container_width=True, height=420)
@@ -413,10 +466,10 @@ with tab1:
         try:
             import plotly.express as px
             color_map = {
-                "🔴 Sin stock": "#ff5555",
-                "🟡 Sin stock (entrante)": "#ffdd00",
-                "🟠 Stock bajo": "#ffaa33",
-                "🟢 OK": "#33cc66",
+                "🔴 Sin stock": "#E85555",
+                "🟡 Sin stock (entrante)": "#E8943A",
+                "🟠 Stock bajo": "#E8C43A",
+                "🟢 OK": "#2ECC71",
             }
             fig = px.pie(
                 estado_df,
@@ -429,7 +482,7 @@ with tab1:
             fig.update_layout(
                 paper_bgcolor="rgba(0,0,0,0)",
                 plot_bgcolor="rgba(0,0,0,0)",
-                font_color="#c0d0e8",
+                font_color="#B8D8DE",
                 margin=dict(t=20, b=20, l=10, r=10),
                 legend=dict(orientation="v", font_size=12),
                 showlegend=True,
@@ -542,7 +595,7 @@ with tab4:
                 y=fam_stats["FAMILIA"],
                 orientation="h",
                 marker_color=[
-                    "#ff5555" if x >= 60 else "#ffaa33" if x >= 30 else "#33cc66"
+                    "#E85555" if x >= 60 else "#E8943A" if x >= 30 else "#2ECC71"
                     for x in fam_stats["pct_sin_stock"]
                 ],
                 text=[f"{x}%" for x in fam_stats["pct_sin_stock"]],
@@ -551,9 +604,9 @@ with tab4:
             fig_bar.update_layout(
                 paper_bgcolor="rgba(0,0,0,0)",
                 plot_bgcolor="rgba(0,0,0,0)",
-                font_color="#c0d0e8",
-                xaxis=dict(title="% Sin stock", color="#c0d0e8", gridcolor="#2a3550"),
-                yaxis=dict(color="#c0d0e8"),
+                font_color="#B8D8DE",
+                xaxis=dict(title="% Sin stock", color="#B8D8DE", gridcolor="#2D5059"),
+                yaxis=dict(color="#B8D8DE"),
                 height=600,
                 margin=dict(l=10, r=60, t=20, b=20),
             )
@@ -567,27 +620,27 @@ with tab4:
                 name="Con stock",
                 x=top_fam["FAMILIA"],
                 y=top_fam["Total"] - top_fam["Sin_Stock"],
-                marker_color="#33cc66",
+                marker_color="#2ECC71",
             ))
             fig2.add_trace(go.Bar(
                 name="Sin stock (entrante)",
                 x=top_fam["FAMILIA"],
                 y=top_fam["En_Mar"],
-                marker_color="#ffdd00",
+                marker_color="#E8943A",
             ))
             fig2.add_trace(go.Bar(
                 name="Sin stock sin entrante",
                 x=top_fam["FAMILIA"],
                 y=top_fam["Riesgo"],
-                marker_color="#ff5555",
+                marker_color="#E85555",
             ))
             fig2.update_layout(
                 barmode="stack",
                 paper_bgcolor="rgba(0,0,0,0)",
                 plot_bgcolor="rgba(0,0,0,0)",
-                font_color="#c0d0e8",
-                xaxis=dict(color="#c0d0e8", tickangle=-35, gridcolor="#2a3550"),
-                yaxis=dict(color="#c0d0e8", gridcolor="#2a3550"),
+                font_color="#B8D8DE",
+                xaxis=dict(color="#B8D8DE", tickangle=-35, gridcolor="#2D5059"),
+                yaxis=dict(color="#B8D8DE", gridcolor="#2D5059"),
                 legend=dict(orientation="h", yanchor="bottom", y=1.02, bgcolor="rgba(0,0,0,0)"),
                 height=420,
                 margin=dict(l=10, r=10, t=40, b=80),
