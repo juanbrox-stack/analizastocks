@@ -16,6 +16,14 @@ st.set_page_config(
 # ── CSS ──────────────────────────────────────────────────────────────────────
 st.markdown("""
 <style>
+    /* ── Hide Streamlit chrome ──────────────────────────────────────────── */
+    #MainMenu { visibility: hidden; }
+    header[data-testid="stHeader"] { display: none; }
+    footer { visibility: hidden; }
+    .stDeployButton { display: none; }
+    /* Remove default top padding left by hidden header */
+    .block-container { padding-top: 1.5rem !important; }
+
     /* ── Cecotec Brand Palette ───────────────────────────────────────────────
        Primary turquoise : #3EB1C8
        Corporate black   : #141413
@@ -302,7 +310,13 @@ with col_h1:
     st.markdown("## 📦 Dashboard de Stock vs Tarifa")
     st.markdown("Visibilidad en tiempo real · Anticipación a roturas de stock")
 with col_h2:
-    pass
+    st.markdown(
+        "<div style='text-align:right;padding-top:8px'>"
+        "<span style='font-size:11px;color:#7ABFCC;text-transform:uppercase;letter-spacing:1px'>Powered by</span><br>"
+        "<span style='font-size:20px;font-weight:700;color:#3EB1C8;letter-spacing:1px'>CECOTEC</span>"
+        "</div>",
+        unsafe_allow_html=True,
+    )
 st.markdown("</div>", unsafe_allow_html=True)
 
 if not data_ready:
